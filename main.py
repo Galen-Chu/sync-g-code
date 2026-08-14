@@ -9,7 +9,7 @@ def generate_spiritual_content():
     # 這裡未來可以加入抓取星象/農民曆的 API 邏輯
     today = datetime.now().strftime("%Y-%m-%d")
     
-    model = genai.GenerativeModel('gemini-pro')
+    model = genai.GenerativeModel('gemini-1.5-pro')
     
     prompt = f"""
     今天是 {today}。

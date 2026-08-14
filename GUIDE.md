@@ -8,7 +8,7 @@ A. 複製專案與建立虛擬環境
 Bash
 # 複製專案 (Clone the repository)
 git clone <your-repo-url>
-cd spiritual-g-code-navigator
+cd sync-g-code
 
 # 建立虛擬環境 (Create Virtual Environment)
 python3 -m venv venv

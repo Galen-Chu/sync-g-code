@@ -1,0 +1,15 @@
+# Environment variables (contains API keys)
+.env
+
+# Google Service Account credentials
+credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
