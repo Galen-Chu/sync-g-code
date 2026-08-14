@@ -1,4 +1,4 @@
-# 🛰️ Spiritual G-Code: Daily Navigator
+# 🛰️ Sync G-Code: Daily Navigator
 > **"Decoding Potential, Not Diagnosis."**
 
 This project is the foundational "Technical Infrastructure" for the **Spiritual G-Code** brand. It functions as an automated "Pilot’s Log" (飛行日誌), decoding daily celestial and neuro-spiritual patterns into actionable insights for "Aetheric Pilots" (Highly Sensitive Persons/HSPs).
