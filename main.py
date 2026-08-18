@@ -10,7 +10,7 @@ if not api_key:
 client = genai.Client(api_key=api_key)
 
 # gemini-1.5-pro 已下線（API 回傳 404），此處需使用現行支援的模型
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-3.6-flash"
 
 def generate_spiritual_content():
     # 這裡未來可以加入抓取星象/農民曆的 API 邏輯
