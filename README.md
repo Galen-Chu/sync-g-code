@@ -143,7 +143,6 @@ descending into vague mysticism.
 ## 🔄 Related Projects · 關聯專案
 
 Sync G-Code is part of the G-Code ecosystem · Sync G-Code 是 G-Code 生態系統的一環：
-
 | Repository | Focus · 領域 |
 |-----------|-------------|
 | [spiritual-g-code](https://github.com/Galen-Chu/spiritual-g-code) | 🔮 Spiritual dashboard · 靈性儀表板 |
