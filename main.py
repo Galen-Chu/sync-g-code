@@ -22,10 +22,12 @@ TITLE = "每日導航"
 OUT_DIR = Path(__file__).resolve().parent / "out"
 
 # 暫時性錯誤（模型高負載 503／限流 429 等）指數退避重試；
-# 單次失敗＝當日永久缺文，重試是管線的一部分
+# 免費層尖峰時段可能連續滿載數分鐘（實測 2026-10-06 連 5 次全 503、
+# 持續超過 2 分 40 秒），重試視窗拉長到約 17 分鐘
 RETRYABLE_CODES = {429, 500, 502, 503, 504}
-MAX_ATTEMPTS = 5
-BACKOFF_BASE_SECONDS = 10
+MAX_ATTEMPTS = 6
+BACKOFF_BASE_SECONDS = 60
+BACKOFF_MAX_SECONDS = 300
 
 RESPONSE_SCHEMA = {
     "type": "object",
@@ -74,12 +76,27 @@ def generate_spiritual_content(client: genai.Client, today: str) -> dict:
             missing = [k for k in RESPONSE_SCHEMA["required"] if not data.get(k)]
             if missing:
                 raise ValueError(f"回應缺少欄位：{', '.join(missing)}")
+            usage = getattr(response, "usage_metadata", None)
+            if usage:
+                print(
+                    f"Token 用量：prompt={getattr(usage, 'prompt_token_count', '?')} "
+                    f"output={getattr(usage, 'candidates_token_count', '?')} "
+                    f"total={getattr(usage, 'total_token_count', '?')}"
+                )
             return data
         except genai_errors.APIError as e:
             code = getattr(e, "code", None)
             if code not in RETRYABLE_CODES or attempt == MAX_ATTEMPTS:
+                print(
+                    f"Gemini API 重試 {MAX_ATTEMPTS - 1} 次後仍失敗"
+                    f"（HTTP {code}），當日內容缺文；"
+                    "可稍後手動 dispatch 補產（artifact 保留 14 天，"
+                    "Library 端隔日 backfill 會自動入庫）。",
+                    file=sys.stderr,
+                )
                 raise
-            wait = BACKOFF_BASE_SECONDS * (2 ** (attempt - 1))
+            wait = min(BACKOFF_BASE_SECONDS * (2 ** (attempt - 1)),
+                       BACKOFF_MAX_SECONDS)
             print(
                 f"Gemini API 暫時性錯誤（HTTP {code}），"
                 f"{wait} 秒後重試（{attempt}/{MAX_ATTEMPTS - 1} 次重試）…",
