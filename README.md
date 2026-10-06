@@ -29,33 +29,34 @@ and technical in tone — never vague, mystical, or "New Age fluffy."
 
 ## ✨ Core Features · 核心功能
 
-- **Automated Daily Generation** — Gemini 1.5 Pro generates personalized spiritual content every day at 08:00 Taiwan time (00:00 UTC)
+- **Automated Daily Generation** — Gemini generates personalized spiritual content every day at 08:23 Taiwan time (00:23 UTC, deliberately off the hour to avoid GitHub Actions schedule congestion)
 - **Bilingual Output** — every insight is generated in both English and Traditional Chinese (繁體中文)
-- **Flight Log Archive** — all generated content is synced to a centralized Google Doc for long-term growth tracking
+- **Flight Log Archive** — each run uploads a `daily-notes-gcode-{date}` artifact (14-day retention) that the [Obsidian_Library](https://github.com/Galen-Chu/Obsidian_Library) `import-reports` pipeline pulls into `raw/reports/` as the `G_Code_Navigator` stream
+- **Transient-Error Resilience** — Gemini 503/429 responses are retried with exponential backoff; a single API hiccup no longer costs a missing day
 - **Serverless Architecture** — GitHub Actions handles scheduling and execution; no server to maintain
 - **Manual Trigger** — `workflow_dispatch` allows on-demand generation for testing
 
-每日自動生成、雙語輸出、飛行日誌歸檔、無伺服器架構、手動觸發——透過 GitHub Actions 排程，讓先行者每天早上八點收到為他們量身打造的導航指引。
+每日自動生成、雙語輸出、飛行日誌歸檔、暫時性錯誤重試、無伺服器架構、手動觸發——透過 GitHub Actions 排程，讓先行者每天早上收到為他們量身打造的導航指引，並自動歸檔進 Obsidian 知識庫。
 
 ---
 
 ## 🏗️ System Architecture · 系統架構
 
 ```
-  GitHub Actions (Cron 00:00 UTC)
+  GitHub Actions (Cron 00:23 UTC)
         │
         ▼
-  ┌─────────────┐     ┌──────────────────┐     ┌───────────────┐
-  │  main.py     │────▶│ Gemini 1.5 Pro   │────▶│  Google Docs   │
-  │  (Trigger)   │     │ (AI Generation)  │     │  (Flight Log)  │
-  └─────────────┘     └──────────────────┘     └───────────────┘
-        │                      │
-        ▼                      ▼
-  Prompt Template      Bilingual Content
-  (Date + Context)     (Quote + Guidance)
+  ┌─────────────┐     ┌──────────────────┐     ┌────────────────┐
+  │  main.py     │────▶│ Gemini API       │────▶│ Actions         │
+  │  (Trigger)   │     │ (AI Generation,  │     │ artifact        │
+  └─────────────┘     │ JSON + retry)    │     │ (MD + JSON)     │
+        │                      │         └───────┬────────┘
+        ▼                      ▼                 ▼
+  Prompt Template      Bilingual Content   Obsidian_Library
+  (Date + Context)     (Quote + Guidance)  (import-reports 管線)
 ```
 
-系統分為三層：觸發層（GitHub Actions 排程）、生成層（Gemini AI 產出雙語內容）、儲存層（Google Docs 飛行日誌）。每日 UTC 00:00（台灣時間 08:00）自動執行。
+系統分為三層：觸發層（GitHub Actions 排程）、生成層（Gemini 產出結構化雙語內容，503/429 指數退避重試）、儲存層（artifact → Obsidian_Library 的 `raw/reports/`）。每日 UTC 00:23（台灣時間 08:23）自動執行。
 
 ---
 
@@ -65,7 +66,6 @@ and technical in tone — never vague, mystical, or "New Age fluffy."
 
 - Python 3.10+
 - Google Gemini API key (from [AI Studio](https://aistudio.google.com/apikey))
-- Google Cloud Service Account (for Docs API write access)
 
 ### Local Development · 本地開發
 
@@ -79,28 +79,11 @@ source venv/bin/activate    # Windows: .\venv\Scripts\activate
 # Install dependencies · 安裝依賴
 pip install -r requirements.txt
 
-# Configure environment · 設定環境變數
-cp .env.example .env
-# Edit .env with your GEMINI_API_KEY · 填入你的 GEMINI_API_KEY
-
 # Run the navigator · 執行導航器
-python main.py
+GEMINI_API_KEY=your_key python main.py    # Windows PowerShell: $env:GEMINI_API_KEY="your_key"; python main.py
 ```
 
-### Environment Variables · 環境變數
-
-```ini
-GEMINI_API_KEY=your_gemini_api_key_here
-GOOGLE_DOCS_ID=your_target_google_doc_id
-```
-
-### Google Cloud Setup · Google Cloud 設定
-
-1. Download a Service Account JSON key from Google Cloud Console
-2. Rename it to `credentials.json` and place in the project root
-3. Share the target Google Doc with the Service Account email (Editor access)
-
-從 Google Cloud Console 下載 Service Account 金鑰，命名為 `credentials.json`，並將目標 Google Doc 分享給 Service Account 的 Email（編輯者權限）。
+輸出落在 `out/{date}_G_Code_Navigator_每日導航.md` 與同名 `.json`（UTF-8 無 BOM、LF）。
 
 ---
 
@@ -114,8 +97,12 @@ GitHub Actions 工作流每日自動執行，需在 repo Settings → Secrets �
 | Secret | Description · 說明 |
 |--------|-------------|
 | `GEMINI_API_KEY` | Google AI Studio API key · Gemini API 金鑰 |
-| `GOOGLE_DOCS_ID` | Target Google Document ID · 目標文件 ID |
-| `GOOGLE_CREDENTIALS` | Service Account JSON (base64) · 服務帳戶憑證 |
+
+Archival to Obsidian_Library needs no secret on this side — the Library repo pulls
+the artifact with its own read-only PAT (`SYNC_G_CODE_TOKEN`, see its
+`raw/reports/README.md` contract).
+
+歸檔到 Obsidian_Library 不需要在本 repo 設任何 secret——由 Library 端以唯讀 PAT（`SYNC_G_CODE_TOKEN`）抓取 artifact，契約詳見該庫 `raw/reports/README.md`。
 
 To trigger manually: Actions → Daily Spiritual Navigator → Run workflow
 

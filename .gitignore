@@ -13,3 +13,6 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Daily navigator output (uploaded as artifact)
+out/
